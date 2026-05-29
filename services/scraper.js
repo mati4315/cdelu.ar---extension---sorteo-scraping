@@ -52,7 +52,11 @@ async function scrapeIafas(fecha, sorteo, attempt = 0) {
   }
 
   try {
-    const response = await axios.post(IAFAS_API_URL, {}, {
+    const apiUrl = (settings.scraper_url && settings.scraper_url.includes('ultimoExtracto')) 
+      ? settings.scraper_url 
+      : IAFAS_API_URL;
+
+    const response = await axios.post(apiUrl, {}, {
       timeout: Number(settings.scraper_timeout_ms || 12000),
       headers: {
         'User-Agent': randomUserAgent(),

@@ -2,7 +2,7 @@ const { DRAW_ORDER, DRAWS } = require('./constants')
 const { getSetting, saveSetting, getAllSettings } = require('./database')
 
 const DEFAULT_SETTINGS = {
-  scraper_url: process.env.SCRAPER_URL || 'https://servicios.iafas.gov.ar/iafasextractos/',
+  scraper_url: process.env.SCRAPER_URL || 'https://servicios.iafas.gov.ar/ServicioExtracto/ultimoExtracto',
   scraper_timeout_ms: Number(process.env.SCRAPER_TIMEOUT_MS || 12000),
   scraper_retries: Number(process.env.SCRAPER_RETRIES || 3),
   cache_ttl_seconds: Number(process.env.CACHE_TTL_SECONDS || 900),
