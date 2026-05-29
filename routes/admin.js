@@ -35,15 +35,18 @@ router.post('/login', loginLimiter, async (req, res) => {
 })
 
 router.get('/sync-window', verifyCronSecret, async (req, res) => {
-  const sorteo = String(req.query.slot || '').toLowerCase()
+  const sorteo = req.query.slot ? String(req.query.slot).toLowerCase() : null
   const fecha = today()
 
-  if (!DRAWS[sorteo]) {
-    return res.status(400).json({ error: 'slot inválido' })
+  if (sorteo) {
+    if (!DRAWS[sorteo]) return res.status(400).json({ error: 'slot inválido' })
+    const result = await syncDraw({ fecha, sorteo, source: 'cron_window' })
+    return res.json({ ok: true, ...result })
   }
 
-  const result = await syncDraw({ fecha, sorteo, source: 'cron_window' })
-  res.json({ ok: true, ...result })
+  // Si no hay slot específico, revisa todos. El syncDraw saltará los que estén fuera de horario.
+  const results = await syncMany({ fecha, sorteos: DRAW_ORDER, source: 'cron_window' })
+  res.json({ ok: true, fecha, results })
 })
 
 router.use(verifyAdminToken)
