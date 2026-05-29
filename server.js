@@ -14,6 +14,7 @@ const adminRoutes = require('./routes/admin')
 const { getSettingsObject } = require('./services/config')
 const { startScheduler } = require('./services/scheduler')
 const websocket = require('./services/websocket')
+const mysql = require('./services/mysql')
 
 const app = express()
 const server = http.createServer(app)
@@ -46,6 +47,10 @@ if (settings.enable_websocket !== false) {
 } else {
   console.log('[ws] deshabilitado por configuración')
 }
+
+// Inicializar MySQL remoto (best-effort, si no hay conexión no rompe nada)
+mysql.initPool()
+mysql.ensureTables()
 
 startScheduler()
 

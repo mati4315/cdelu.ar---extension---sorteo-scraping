@@ -4,6 +4,7 @@ const { getResult, saveResult, getResultsByDate, saveSyncLog } = require('./data
 const { scrapeIafas } = require('./scraper')
 const { emitUpdate } = require('./websocket')
 const { today, isWithinWindow, msUntilDraw, getWindowForDraw } = require('./time')
+const mysql = require('./mysql')
 
 function drawEnabled(settings, drawKey) {
   return Boolean(settings[`draw_enabled_${drawKey}`])
@@ -63,6 +64,8 @@ async function syncDraw({ fecha = today(), sorteo, force = false, source = 'manu
   if (scraped.resultado) {
     const changed = cached?.resultado !== scraped.resultado
     saveResult(fecha, sorteo, scraped.resultado, source)
+    // Espejar a MySQL remoto (best-effort, no bloquea)
+    mysql.saveResult(fecha, sorteo, scraped.resultado, source)
     saveSyncLog({
       fecha,
       sorteo,
