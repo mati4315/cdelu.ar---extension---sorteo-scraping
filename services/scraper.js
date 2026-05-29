@@ -1,19 +1,13 @@
 const axios = require('axios')
-const cheerio = require('cheerio')
 const { USER_AGENTS } = require('./constants')
 const { getSettingsObject } = require('./config')
-const { formatHumanDate, today, isToday, hasDrawPassed } = require('./time')
+const { today, isToday, hasDrawPassed } = require('./time')
+
+const IAFAS_API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lzZXh0cmFjdG9zIiwiaWF0IjoxNjg5MjUzMDM4fQ.K74dsnw140HpyEEcVJW4BAlFHjWqXxDM5KvoObqjcBY'
+const IAFAS_API_URL = 'https://servicios.iafas.gov.ar/ServicioExtracto/ultimoExtracto'
 
 function randomUserAgent() {
   return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)]
-}
-
-function buildDateVariants(date) {
-  const [year, month, day] = String(date).split('-')
-  const padded = `${day}/${month}/${year}`
-  const dashed = `${day}-${month}-${year}`
-  const shortYear = `${day}/${month}/${year.slice(2)}`
-  return [date, padded, dashed, shortYear, formatHumanDate(date)].filter(Boolean)
 }
 
 function normalizeText(value) {
@@ -25,30 +19,29 @@ function normalizeText(value) {
     .trim()
 }
 
-function extractResultFromHtml(html, fecha, sorteo) {
-  const $ = cheerio.load(html)
+function extractResultFromJson(data, fecha, sorteo) {
+  if (!Array.isArray(data)) return null
   const normalizedDraw = normalizeText(sorteo)
-  const dateVariants = buildDateVariants(fecha).map(normalizeText)
-  let result = null
-
-  $('table tr').each((_, row) => {
-    if (result) return
-
-    const rowText = normalizeText($(row).text())
-    const matchesDate = dateVariants.some((variant) => rowText.includes(variant))
-    const matchesDraw = rowText.includes(normalizedDraw)
-
-    if (!matchesDate || !matchesDraw) return
-
-    const cells = $(row).find('td')
-    if (!cells.length) return
-
-    const lastCell = normalizeText($(cells[cells.length - 1]).text()).replace(/\s+/g, '')
-    const numericMatch = lastCell.match(/\b\d{4}\b/)
-    result = numericMatch ? numericMatch[0] : $(cells[cells.length - 1]).text().trim() || null
-  })
-
-  return result
+  
+  for (const row of data) {
+    if (row.Ubicacion !== 1) continue // Solo nos interesa el primer premio
+    if (row.NroLoteria !== 1) continue // Solo Loteria de Entre Rios (1)
+    
+    // row.FechaSorteo viene como "2026-05-28T00:00:00.000Z"
+    if (!row.FechaSorteo || !row.FechaSorteo.startsWith(fecha)) {
+      continue
+    }
+    
+    const mod = normalizeText(row.Modalidad)
+    if (!mod.includes(normalizedDraw) && !normalizedDraw.includes(mod)) {
+      continue
+    }
+    
+    // Lo encontramos, devolvemos el valor asegurando 4 cifras
+    return String(row.Valor).padStart(4, '0')
+  }
+  
+  return null
 }
 
 async function scrapeIafas(fecha, sorteo, attempt = 0) {
@@ -59,18 +52,19 @@ async function scrapeIafas(fecha, sorteo, attempt = 0) {
   }
 
   try {
-    const response = await axios.get(settings.scraper_url, {
+    const response = await axios.post(IAFAS_API_URL, {}, {
       timeout: Number(settings.scraper_timeout_ms || 12000),
       headers: {
         'User-Agent': randomUserAgent(),
-        'Accept-Language': 'es-AR,es;q=0.9',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Cache-Control': 'no-cache',
-        Pragma: 'no-cache',
+        'Authorization': `Bearer ${IAFAS_API_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
+        'Origin': 'https://servicios.iafas.gov.ar',
+        'Referer': 'https://servicios.iafas.gov.ar/iafasextractos/'
       },
     })
 
-    const resultado = extractResultFromHtml(response.data, fecha, sorteo)
+    const resultado = extractResultFromJson(response.data, fecha, sorteo)
     return {
       ok: true,
       resultado: resultado || null,
@@ -95,5 +89,5 @@ async function scrapeIafas(fecha, sorteo, attempt = 0) {
 
 module.exports = {
   scrapeIafas,
-  extractResultFromHtml,
+  extractResultFromJson,
 }

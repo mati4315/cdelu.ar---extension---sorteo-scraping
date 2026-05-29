@@ -4,7 +4,7 @@ Sistema listo para correr local o subir a Hostinger/VPS con estas piezas:
 
 - API REST para resultados IAFAS
 - Persistencia robusta en base de datos MySQL (ideal para Hostinger remoto)
-- Scraping avanzado con retry y rotación extendida de 14 User-Agents (Mobile y Desktop)
+- Consumo directo de API JSON oculta de IAFAS (100% estable y rápido, libre de bloqueos)
 - Sincronización inteligente por ventanas horarias (gestiona los sorteos automáticamente)
 - Endpoint único de seguridad pensado para cron-job.org a 1 minuto
 - Dashboard web estilo live monitoring
@@ -88,5 +88,6 @@ Asegúrate de:
 
 ## Notas
 
-- El selector HTML depende de que IAFAS no cambie demasiado la tabla. Si cambia el markup, hay que retocar `services/scraper.js`.
-- El sistema cuenta con 14 User-Agents para evitar bloqueos. En caso de fallas, revisa los *Sync Logs* desde el Dashboard.
+- **¡NUEVO!** El sistema ahora consume directamente la API JSON oculta (`ultimoExtracto`) de IAFAS, autenticada por un token JWT interno. Ya no depende del diseño visual o tablas HTML de la página web, lo que hace al módulo 100% estable, rápido y a prueba de cambios de diseño.
+- Se eliminó completamente la dependencia `cheerio`, lo que minimiza casi a cero el consumo de CPU y Memoria RAM (ideal para entornos compartidos en Hostinger).
+- El scraper emula peticiones orgánicas alternando 14 User-Agents aleatorios. En caso de fallas, revisa la sección *Sync Logs* desde el Dashboard.
