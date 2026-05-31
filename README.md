@@ -71,7 +71,7 @@ Por defecto el `.env.example` deja:
 Para Hostinger compartido, la mejor forma de no agotar recursos y mantener la app activa es con **un solo cron externo configurado cada 1 minuto**.
 
 **Configuración en Cron-job.org:**
-- **URL:** `https://tu-dominio.com/api/admin/sync-window`
+- **URL:** `https://loteria.cdelu.io/api/admin/sync-window`
 - **Schedule:** Cada 1 minuto.
 - **Headers:** 
   - Key: `x-cron-secret`
