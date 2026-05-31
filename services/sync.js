@@ -59,6 +59,19 @@ async function syncDraw({ fecha = today(), sorteo, force = false, source = 'manu
     return { ok: true, skipped: true, reason: 'outside_window', fecha, sorteo, resultado: null }
   }
 
+  // Si ya tenemos el resultado exitosamente y no estamos forzando, NO volvemos a consultar la API
+  if (!force && cached?.resultado) {
+    return {
+      ok: true,
+      scraped: false,
+      fecha,
+      sorteo,
+      resultado: cached.resultado,
+      cached: true,
+      reason: 'already_obtained',
+    }
+  }
+
   const scraped = await scrapeIafas(fecha, sorteo)
 
   if (scraped.resultado) {
